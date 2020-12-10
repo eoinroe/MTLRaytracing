@@ -92,8 +92,7 @@
 			isa = PBXGroup;
 			children = (
 				6F059BC1258298BA000B53FA /* Application */,
-				6F937FF22582A1180065D5B3 /* macOS */,
-				6F937FC225829D8F0065D5B3 /* iOS */,
+				6FF76A572582A56C00A8D5CD /* Renderer */,
 				6F059BC0258298BA000B53FA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -110,9 +109,8 @@
 		6F059BC1258298BA000B53FA /* Application */ = {
 			isa = PBXGroup;
 			children = (
-				6F059BD325829945000B53FA /* Engine */,
-				6F059BDD25829945000B53FA /* Shaders */,
-				6F059BE025829945000B53FA /* Utility */,
+				6F937FC225829D8F0065D5B3 /* iOS */,
+				6F937FF22582A1180065D5B3 /* macOS */,
 				6F059BC6258298BB000B53FA /* Assets.xcassets */,
 			);
 			path = Application;
@@ -174,6 +172,16 @@
 				6F937FFD2582A11A0065D5B3 /* MTLRaytracing_macOS.entitlements */,
 			);
 			path = macOS;
+			sourceTree = "<group>";
+		};
+		6FF76A572582A56C00A8D5CD /* Renderer */ = {
+			isa = PBXGroup;
+			children = (
+				6F059BD325829945000B53FA /* Engine */,
+				6F059BDD25829945000B53FA /* Shaders */,
+				6F059BE025829945000B53FA /* Utility */,
+			);
+			path = Renderer;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -465,7 +473,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 97C5WDHM6Q;
-				INFOPLIST_FILE = iOS/Info.plist;
+				INFOPLIST_FILE = Application/iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -486,7 +494,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 97C5WDHM6Q;
-				INFOPLIST_FILE = iOS/Info.plist;
+				INFOPLIST_FILE = Application/iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -506,12 +514,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = macOS/MTLRaytracing_macOS.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Application/macOS/MTLRaytracing_macOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 97C5WDHM6Q;
 				ENABLE_HARDENED_RUNTIME = YES;
-				INFOPLIST_FILE = macOS/Info.plist;
+				INFOPLIST_FILE = Application/macOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -527,12 +535,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = macOS/MTLRaytracing_macOS.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Application/macOS/MTLRaytracing_macOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 97C5WDHM6Q;
 				ENABLE_HARDENED_RUNTIME = YES;
-				INFOPLIST_FILE = macOS/Info.plist;
+				INFOPLIST_FILE = Application/macOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
