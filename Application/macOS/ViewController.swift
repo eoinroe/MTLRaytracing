@@ -37,7 +37,7 @@ class ViewController: NSViewController, MTKViewDelegate {
             return
         }
         
-        let scene = Scene.newRaytracingInOneWeekendScene(device: metalView.device!)
+        let scene = Scene.newTestScene(device: metalView.device!)
         
         // Configure the renderer to draw to the view.
         renderer = Renderer(metalDevice: metalView.device!, scene: scene, renderDestination: metalView)
@@ -82,12 +82,17 @@ class ViewController: NSViewController, MTKViewDelegate {
         renderer.delta.x -= Float(translation.x) * 0.005
         renderer.delta.y += Float(translation.y) * 0.005
         
+        // print("Delta X:", renderer.delta.x)
+        // print("Delta Y:", renderer.delta.y)
+        
         gesture.setTranslation(.zero, in: gesture.view)
     }
     
     override func scrollWheel(with event: NSEvent) {
         renderer.camera.zoom(delta: Float(event.deltaY))
         renderer.cameraDistance -= Float(event.deltaY) * 0.05
+        
+        // print("Camera Distance:", renderer.cameraDistance)
     }
     
     @IBAction func switchRenderingMethod(_ sender: NSSegmentedControl) {

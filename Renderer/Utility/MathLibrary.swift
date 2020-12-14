@@ -13,6 +13,19 @@ extension Float {
   var degreesToRadians: Float {
     (self / 180) * π
   }
+    
+  /*
+    
+  func distance(x1: Float, y1: Float, x2: Float, y2: Float) -> Float {
+      // Euclidean distance
+      let a = x1 - x2
+      let b = y1 - y2
+      let c = sqrt(pow(a, 2) + pow(b, 2))
+        
+      return c
+  }
+ 
+  */
 }
 
 extension float3 {

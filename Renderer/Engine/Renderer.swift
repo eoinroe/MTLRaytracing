@@ -57,11 +57,11 @@ class Renderer: NSObject {
     
     /// This is updated by the view controller when the
     /// NSPanGestureRecognizer responds to user input.
-    var delta = simd_float2(0.0, 0.0)
+    var delta = simd_float2(1.3, -0.2)
 
     /// Arcball camera
     var camera: Camera
-    var cameraDistance: Float = 15.0
+    var cameraDistance: Float = 8.1
     
     /// Raytracing
     var instanceAccelerationStructure: MTLAccelerationStructure!
@@ -135,7 +135,7 @@ class Renderer: NSObject {
         
         self.scene = scene
         
-        self.camera = Renderer.setupCamera(distance: 15, rotation: float3(repeating: 0), target: float3(repeating: 0.0))
+        self.camera = Renderer.setupCamera(distance: cameraDistance, rotation: float3(repeating: 0), target: float3(repeating: 0.0))
         
         super.init()
         
