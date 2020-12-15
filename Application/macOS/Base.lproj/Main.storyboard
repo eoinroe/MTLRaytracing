@@ -674,7 +674,7 @@
                         <outlet property="delegate" destination="Voe-Tx-rLC" id="PrD-fu-P6m"/>
                     </connections>
                 </application>
-                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="MTLRaytracing" customModuleProvider="target"/>
+                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="MTLRaytracing_macOS" customModuleProvider="target"/>
                 <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
                 <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -704,7 +704,7 @@
         <!--View Controller-->
         <scene sceneID="hIz-AP-VOD">
             <objects>
-                <viewController id="XfG-lQ-9wD" customClass="ViewController" customModule="MTLRaytracing" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="XfG-lQ-9wD" customClass="ViewController" customModule="MTLRaytracing_macOS" customModuleProvider="target" sceneMemberID="viewController">
                     <customView key="view" id="ab1-vA-stc" userLabel="View">
                         <rect key="frame" x="0.0" y="0.0" width="700" height="500"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -761,16 +761,30 @@
                                     <action selector="toggleDenoising:" target="XfG-lQ-9wD" id="8aT-fc-4lC"/>
                                 </connections>
                             </button>
+                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="TF2-HK-hxk">
+                                <rect key="frame" x="513" y="293" width="140" height="18"/>
+                                <buttonCell key="cell" type="check" title="Gamma Correction" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="WXC-Li-VHD">
+                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                    <font key="font" metaFont="system"/>
+                                </buttonCell>
+                                <connections>
+                                    <action selector="toggleGammaCorrection:" target="XfG-lQ-9wD" id="eIP-Dk-pcM"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="70g-UZ-x2T" secondAttribute="trailing" constant="15" id="0fz-Lr-6l2"/>
                             <constraint firstAttribute="trailing" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="200" id="1I0-gw-qXO"/>
                             <constraint firstItem="FXt-QY-EiD" firstAttribute="leading" secondItem="LRl-J4-2Bs" secondAttribute="trailing" constant="8" id="2lm-Lc-VbL"/>
+                            <constraint firstAttribute="trailing" secondItem="xwh-G0-3Gp" secondAttribute="trailing" constant="107" id="4qV-V1-rWo"/>
+                            <constraint firstItem="TF2-HK-hxk" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="xwh-G0-3Gp" secondAttribute="leading" id="5vI-r5-RwQ"/>
+                            <constraint firstItem="TF2-HK-hxk" firstAttribute="top" secondItem="xwh-G0-3Gp" secondAttribute="bottom" constant="20" id="GcP-3z-4Gj"/>
                             <constraint firstItem="FXt-QY-EiD" firstAttribute="centerX" secondItem="70g-UZ-x2T" secondAttribute="centerX" id="HoV-2u-vQ9"/>
                             <constraint firstItem="U9x-Tl-TBR" firstAttribute="leading" secondItem="ab1-vA-stc" secondAttribute="leading" id="JR0-9s-18J"/>
                             <constraint firstItem="LRl-J4-2Bs" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="8" symbolic="YES" id="KW2-PF-57R"/>
                             <constraint firstAttribute="bottom" secondItem="U9x-Tl-TBR" secondAttribute="bottom" id="KuY-OO-Wnv"/>
                             <constraint firstItem="FXt-QY-EiD" firstAttribute="top" secondItem="LRl-J4-2Bs" secondAttribute="top" id="P32-fx-iWl"/>
+                            <constraint firstAttribute="trailing" secondItem="TF2-HK-hxk" secondAttribute="trailing" constant="47" id="QXt-a3-CLz"/>
                             <constraint firstItem="xwh-G0-3Gp" firstAttribute="top" secondItem="FXt-QY-EiD" secondAttribute="bottom" constant="30" id="YiG-Em-L4W"/>
                             <constraint firstItem="70g-UZ-x2T" firstAttribute="top" secondItem="ab1-vA-stc" secondAttribute="top" constant="52" id="Zs6-Hc-4WR"/>
                             <constraint firstItem="U9x-Tl-TBR" firstAttribute="top" secondItem="ab1-vA-stc" secondAttribute="top" id="mtO-uy-kRE"/>

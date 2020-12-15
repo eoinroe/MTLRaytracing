@@ -71,24 +71,6 @@ float3 transformDirection(float3 p, float4x4 transform) {
     return (transform * float4(p.x, p.y, p.z, 0.0f)).xyz;
 }
 
-constant float EPSILON = 0.000001f;
-
-static inline float3 refraction (
-    float3 dir, // direction of incoming light ray
-    float3 n, // surface normal of refracting surface, pointing outwards (so roughly in the against the direction of light ray)
-    float ni_over_nt // refractive indices fraction
-){
-    float dt = dot(dir, n); // dot prod.
-    float discriminant = 1.f - ni_over_nt*ni_over_nt*(1.f-dt*dt);
-    if (discriminant > EPSILON){
-        return (dir - n*dt)*ni_over_nt - n*sqrt(discriminant);
-    } else {
-        // total internal reflection
-        // reflect the direction against the surface normal
-        return reflect(dir, n);
-    }
-}
-
 float3 shirley_refract(const float3 uv, const float3 n, float etai_over_etat) {
     auto cos_theta = fmin(dot(-uv, n), 1.0);
     float3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
@@ -459,7 +441,7 @@ void glass(thread ray & ray,
     
     
     // The direction and normal are normalized so you don't need to multiply by the length.
-    float cos_θ = dot(ray.direction, surfaceNormal) * length(ray.direction) * length(surfaceNormal);
+    // float cos_θ = dot(ray.direction, surfaceNormal) * length(ray.direction) * length(surfaceNormal);
 
     // faceforward(<#float3 n#>, <#float3 i#>, <#float3 nref#>)
     
@@ -767,17 +749,30 @@ copyVertex(unsigned short vid [[vertex_id]]) {
 
 typedef VertexOut FragmentIn;
 
+// Simple fragment shader which copies a texture and applies a simple tonemapping function.
+fragment float4 copyFragment(FragmentIn in [[ stage_in ]],
+                             texture2d<float, access::sample> tex0)
+{
+    constexpr sampler sam(min_filter::nearest, mag_filter::nearest, mip_filter::none);
+    
+    float3 color = tex0.sample(sam, in.uv).rgb;
+    
+    // Apply a very simple tonemapping function to reduce the dynamic range of the
+    // input image into a range which can be displayed on screen.
+    color = color / (1.0f + color);
+    
+    return float4(color, 1.0f);
+}
+
+
 fragment float4
-copyFragment(FragmentIn in [[ stage_in ]],
-             texture2d<float, access::sample> tex0)
+gammaCorrectionFragment(FragmentIn in [[ stage_in ]],
+                        texture2d<float, access::sample> tex0)
 {
     // constexpr sampler s;
     constexpr sampler sam(min_filter::nearest, mag_filter::nearest, mip_filter::none);
     
-    float2 st = in.uv;
-    // st.y = 1.0 - st.y;
-    
-    float4 color = tex0.sample(sam, st);
+    float3 color = tex0.sample(sam, in.uv).rgb;
     
     // Divide the color by the number of samples and gamma-correct for gamma=2.0
     // auto scale = 1.0 / samples_per_pixel;
@@ -787,12 +782,7 @@ copyFragment(FragmentIn in [[ stage_in ]],
     
     // This application is only using 1 sample per pixel.
     // color = sqrt(color);
-    // color = clamp(sqrt(color), 0.0, 0.999);
+    color = clamp(sqrt(color), 0.0, 0.999);
     
-    // Apply a very simple tonemapping function to reduce the dynamic range of the
-    // input image into a range which can be displayed on screen.
-    color = color / (1.0f + color);
-    
-    // return float4(float3(color.r / 100.0f), 1.0);
-    return float4(color.rgb, 1.0f);
+    return float4(color, 1.0f);
 }

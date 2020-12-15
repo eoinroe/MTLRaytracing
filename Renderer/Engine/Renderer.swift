@@ -51,6 +51,7 @@ class Renderer: NSObject {
     var raytracingFunction: MTLFunction!
     var raytracingPipeline: MTLComputePipelineState!
     var copyPipeline: MTLRenderPipelineState!
+    var gammaCorrectionPipeline: MTLRenderPipelineState!
     
     var useIntersectionFunctions: Bool = false
     var intersectionFunctionTable: MTLIntersectionFunctionTable!
@@ -84,6 +85,8 @@ class Renderer: NSObject {
     var useRasterization: Bool = false
     
     var useAccumulation: Bool = true
+    
+    var useGammaCorrection: Bool = true
     
     /**
         This texture is created on startup when the following function is called:
@@ -377,7 +380,7 @@ class Renderer: NSObject {
         
         renderDescriptor.vertexFunction = vertexFunction
         renderDescriptor.fragmentFunction = fragmentFunction
-        renderDescriptor.colorAttachments[0].pixelFormat = renderDestination.colorPixelFormat
+        renderDescriptor.colorAttachments[0].pixelFormat = .rgba16Float
         
         // Initialize the pipeline.
         do {
@@ -386,6 +389,18 @@ class Renderer: NSObject {
             print("Failed to create copy pipeline state, error \(error)")
         }
         
+        guard let gammaFunction = library.makeFunction(name: "gammaCorrectionFragment") else {
+            fatalError("The shader function could not be found/created.")
+        }
+        
+        renderDescriptor.fragmentFunction = gammaFunction
+        renderDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        
+        do {
+            try gammaCorrectionPipeline = device.makeRenderPipelineState(descriptor: renderDescriptor)
+        } catch let error {
+            print("Failed to create gamma correction pipeline state, error \(error)")
+        }
         
         // Setup rasterization pipeline.
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -920,10 +935,10 @@ class Renderer: NSObject {
             swap(&src, &dst)
             
             if let drawable = renderDestination.currentDrawable {
-                if useRasterization {
-                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, drawable: drawable, image: depthNormalTexture)
+                if useGammaCorrection {
+                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, pipeline: gammaCorrectionPipeline, drawable: drawable, image: accumulation.read)
                 } else {
-                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, drawable: drawable, image: accumulation.read)
+                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, pipeline: copyPipeline, drawable: drawable, image: accumulation.read)
                 }
             }
         } else {
@@ -975,9 +990,9 @@ class Renderer: NSObject {
             
             if let drawable = renderDestination.currentDrawable {
                 if useRasterization {
-                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, drawable: drawable, image: motionVectorTexture)
+                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, pipeline: copyPipeline, drawable: drawable, image: motionVectorTexture)
                 } else {
-                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, drawable: drawable, image: AATexture)
+                    presentDrawableToCommandBuffer(commandBuffer: commandBuffer, pipeline: copyPipeline, drawable: drawable, image: AATexture)
                 }
             }
         }
@@ -1282,7 +1297,7 @@ class Renderer: NSObject {
         textureAllocator.return(depthTexture)
     }
     
-    func presentDrawableToCommandBuffer(commandBuffer: MTLCommandBuffer, drawable: CAMetalDrawable, image: MTLTexture?) {
+    func presentDrawableToCommandBuffer(commandBuffer: MTLCommandBuffer, pipeline: MTLRenderPipelineState, drawable: CAMetalDrawable, image: MTLTexture?) {
         // Copy the resulting image into the view using the graphics pipeline since the sample
         // can't write directly to it using the compute kernel. The sample delays getting the
         // current render pass descriptor as long as possible to avoid a lenghty stall waiting
@@ -1296,7 +1311,7 @@ class Renderer: NSObject {
         
         let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         
-        renderEncoder.setRenderPipelineState(copyPipeline)
+        renderEncoder.setRenderPipelineState(pipeline)
         
         renderEncoder.setFragmentTexture(image, index: 0)
         

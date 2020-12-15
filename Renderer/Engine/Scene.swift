@@ -302,16 +302,24 @@ class Scene: NSObject {
             translate = float4x4(translation: spheres[index].origin)
             scale = float4x4(scaling: float3(repeating: spheres[index].radius))
             
-            let r = Float.random(in: 0...1) * Float.random(in: 0...1)
-            let g = Float.random(in: 0...1) * Float.random(in: 0...1)
-            let b = Float.random(in: 0...1) * Float.random(in: 0...1)
-
-            let color = SIMD3<Float>(r, g, b)
-            
             let chooseMaterial = Double.random(in: 0.0...1.0)
             
-            if chooseMaterial < 0.65
+            if chooseMaterial < 0.8
             {
+                // let r = Float.random(in: 0...1)
+                // let g = Float.random(in: 0...1)
+                // let b = Float.random(in: 0...1)
+                
+                // let r = pow(Float.random(in: 0...1), 2)
+                // let g = pow(Float.random(in: 0...1), 2)
+                // let b = pow(Float.random(in: 0...1), 2)
+                
+                let r = Float.random(in: 0...1) * Float.random(in: 0...1)
+                let g = Float.random(in: 0...1) * Float.random(in: 0...1)
+                let b = Float.random(in: 0...1) * Float.random(in: 0...1)
+                
+                let color = SIMD3<Float>(r, g, b)
+                
                 instance = GeometryInstance(geometry: sphereGeometry,
                                             transform: translate * scale,
                                             mask: Mask.sphere.rawValue,
@@ -320,6 +328,12 @@ class Scene: NSObject {
             }
             else
             {
+                let r = Float.random(in: 0.5...1)
+                let g = Float.random(in: 0.5...1)
+                let b = Float.random(in: 0.5...1)
+
+                let color = SIMD3<Float>(r, g, b)
+                
                 instance = GeometryInstance(geometry: sphereGeometry,
                                             transform: translate * scale,
                                             mask: Mask.sphere.rawValue,
@@ -525,7 +539,7 @@ extension Scene {
                 spheres.append(sphere)
             }
             
-            if iterations > 999999 {
+            if iterations >= 1000000 {
                 print("Breaking out of the loop after 1000000 iterations. \(spheres.count) circles added to the array.")
                 break
             }

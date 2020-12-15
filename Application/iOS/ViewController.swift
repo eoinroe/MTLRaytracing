@@ -8,6 +8,7 @@
 import UIKit
 import Metal
 import MetalKit
+import ReplayKit
 
 protocol RenderDestinationProvider {
     var currentRenderPassDescriptor: MTLRenderPassDescriptor? { get }
@@ -19,10 +20,18 @@ protocol RenderDestinationProvider {
 
 extension MTKView: RenderDestinationProvider {}
 
-class ViewController: UIViewController, MTKViewDelegate {
+class ViewController: UIViewController, MTKViewDelegate, RPPreviewViewControllerDelegate {
     var renderer: Renderer!
     
     static var previousScale: CGFloat = 1
+    
+    /// Device for screen recording
+    let recorder = RPScreenRecorder.shared()
+    private var isRecording = false
+    
+    var x: Float = 1
+    var y: Float = 1
+    let easing: Float = 0.05
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,7 +41,7 @@ class ViewController: UIViewController, MTKViewDelegate {
         if let view = self.view as? MTKView {
             view.device = MTLCreateSystemDefaultDevice()
             view.backgroundColor = UIColor.clear
-            view.colorPixelFormat = .rgba16Float
+            view.colorPixelFormat = .bgra8Unorm
             view.depthStencilPixelFormat = .depth32Float
             view.delegate = self
             
@@ -55,7 +64,7 @@ class ViewController: UIViewController, MTKViewDelegate {
                 return
             }
             
-            let scene = Scene.newRaytracingInOneWeekendScene(device: view.device!)
+            let scene = Scene.newTestScene(device: view.device!)
             
             // Configure the renderer to draw to the view.
             renderer = Renderer(metalDevice: view.device!, scene: scene, renderDestination: view)
@@ -100,6 +109,63 @@ class ViewController: UIViewController, MTKViewDelegate {
         renderer.update()
     }
     
+    // https://www.hackingwithswift.com/example-code/media/how-to-record-user-videos-using-replaykit
+    func previewControllerDidFinish(_ previewController: RPPreviewViewController) {
+        dismiss(animated: true)
+    }
+    
+    func startRecording() {
+        guard recorder.isAvailable else {
+            print("Recording is not available at this time")
+            return
+        }
+    
+        recorder.isMicrophoneEnabled = true
+    
+        // This function has a handler
+        recorder.startRecording{ [unowned self] (error) in
+    
+            guard error == nil else {
+                print("There was an error starting the recording.")
+                return
+            }
+    
+            print("Started Recording Successfully")
+            self.isRecording = true
+        }
+    }
+    
+    func stopRecording() {
+        recorder.stopRecording { [unowned self] (preview, error) in
+            print("Stopped recording")
+    
+            // The stopRecording function creates a preview controller which we can call in the handler
+            guard preview != nil else {
+                print("Preview controller is not available.")
+                return
+            }
+    
+            let alert = UIAlertController(title: "Recording Finished", message: "Would you like to edit or delete your recording?", preferredStyle: .alert)
+    
+            let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { (UIAlertAction) in
+                self.recorder.discardRecording { () -> Void in
+                    print("Recording successfully deleted.")
+                }
+            }
+    
+            // If tapped, this action will open up the preview controller so you can watch the recording, save it or edit it
+            let editAction = UIAlertAction(title: "edit", style: .default) { (UIAlertAction) -> Void in
+                preview?.previewControllerDelegate = self
+                self.present(preview!, animated: true, completion: nil)
+            }
+    
+            alert.addAction(editAction)
+            alert.addAction(deleteAction)
+    
+            self.present(alert, animated: true, completion: nil)
+            self.isRecording = false
+        }
+    }
     
     // MARK: - Gesture Recognizers
     
@@ -127,41 +193,84 @@ class ViewController: UIViewController, MTKViewDelegate {
     
     // MARK: - Toggle denoising
     
+    // @objc func handleTap(gesture: UITapGestureRecognizer) {
+    //     renderer.useAccumulation = !renderer.useAccumulation
+    //
+    //     // This has to be reset also since the accumulation
+    //     // won't be happening when the denoiser is running,
+    //     // which means the images won't match up when you
+    //     // switch back...
+    //     renderer.frameIndex = 0
+    // }
+    
     @objc func handleTap(gesture: UITapGestureRecognizer) {
-        renderer.useAccumulation = !renderer.useAccumulation
+        renderer.useGammaCorrection = !renderer.useGammaCorrection
         
-        // This has to be reset also since the accumulation
-        // won't be happening when the denoiser is running,
-        // which means the images won't match up when you
-        // switch back...
-        renderer?.frameIndex = 0
+        if let view = self.view as? MTKView {
+            if renderer.useGammaCorrection {
+                view.colorPixelFormat = .bgra8Unorm
+            } else {
+                view.colorPixelFormat = .rgba16Float
+            }
+        }
     }
     
     // MARK: - Debug view
     
+    // @objc func handleLongPress(_ sender: UILongPressGestureRecognizer) {
+    //     if (sender.state == UIGestureRecognizer.State.began) {
+    //         print("Long Press")
+    //
+    //         renderer.useRasterization = !renderer.useRasterization
+    //     }
+    // }
+
+    /// Start or stop recording the screen with this gesture
     @objc func handleLongPress(_ sender: UILongPressGestureRecognizer) {
         if (sender.state == UIGestureRecognizer.State.began) {
             print("Long Press")
-        
-            renderer.useRasterization = !renderer.useRasterization
+            
+            if !isRecording {
+                startRecording()
+            } else {
+                stopRecording()
+            }
         }
     }
     
-    
     // MARK: - Camera controls
     
+    /*
+     The solution is to use a UILongPressGestureRecognizer with minimumPressDuration set to 0.
+     With this configuration, it will begin recognizing immediately on touch down, allowing you
+     to take action even before the user has moved their finger (or pencil).
+          
+     https://news.ycombinator.com/item?id=18429780
+     https://p5js.org/examples/input-easing.html
+     https://medium.com/@aatish.rajkarnikar/how-to-achieve-smooth-uislider-dragging-experience-in-ios-88da67759714
+     */
+    
     @objc func handlePan(gesture: UIPanGestureRecognizer) {
+        // let currentPoint = gesture.location(in: view)
         let translation = gesture.translation(in: gesture.view)
         
         let delta = float2(Float(translation.x),
                            Float(translation.y))
       
-        renderer?.camera.rotate(delta: delta, sensitivity: 0.001)
+        renderer.camera.rotate(delta: delta, sensitivity: 0.001)
+        
+        // let dx = -Float(translation.x) * 0.001
+        // renderer.delta.x += dx * easing
+        
+        // let dy = Float(translation.y) * 0.001
+        // renderer.delta.y += dy * easing
         
         // This controls the rotation matrix used by the
         // raytracing kernel.
-        renderer?.delta.x -= Float(translation.x) * 0.001
-        renderer?.delta.y += Float(translation.y) * 0.001
+        renderer.delta.x -= Float(translation.x) * 0.001
+        
+        // Clamp the y-position of the camera
+        renderer.delta.y = min(renderer.delta.y + Float(translation.y) * 0.001, 0.0)
         
         // Reset
         gesture.setTranslation(.zero, in: gesture.view)
@@ -171,8 +280,8 @@ class ViewController: UIViewController, MTKViewDelegate {
         let sensitivity: Float = 50
         let delta = Float(gesture.scale - ViewController.previousScale) * sensitivity
         
-        renderer?.camera.zoom(delta: delta)
-        renderer?.cameraDistance -= delta * 0.05
+        renderer.camera.zoom(delta: delta)
+        renderer.cameraDistance -= delta * 0.05
         
         ViewController.previousScale = gesture.scale
         

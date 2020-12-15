@@ -28,7 +28,7 @@ class ViewController: NSViewController, MTKViewDelegate {
         
         // Do any additional setup after loading the view.
         metalView.device = MTLCreateSystemDefaultDevice()
-        metalView.colorPixelFormat = .rgba16Float
+        metalView.colorPixelFormat = .bgra8Unorm
         metalView.depthStencilPixelFormat = .depth32Float
         metalView.delegate = self
 
@@ -80,7 +80,9 @@ class ViewController: NSViewController, MTKViewDelegate {
         // This controls the rotation matrix used by the
         // raytracing kernel.
         renderer.delta.x -= Float(translation.x) * 0.005
-        renderer.delta.y += Float(translation.y) * 0.005
+        
+        // Clamp the y-position of the camera
+        renderer.delta.y = min(renderer.delta.y + Float(translation.y) * 0.001, 0.0)
         
         // print("Delta X:", renderer.delta.x)
         // print("Delta Y:", renderer.delta.y)
@@ -132,5 +134,22 @@ class ViewController: NSViewController, MTKViewDelegate {
         // which means the images won't match up when you
         // switch back...
         renderer.frameIndex = 0
+    }
+    
+    @IBAction func toggleGammaCorrection(_ sender: NSSwitch) {
+        switch sender.state {
+        case .on:
+            metalView.colorPixelFormat = .bgra8Unorm
+            renderer.useGammaCorrection = true
+        case .off:
+            metalView.colorPixelFormat = .rgba16Float
+            renderer.useGammaCorrection = false
+        default:
+            print("On/Off are the only valid states in this case.")
+        }
+    }
+    
+    @IBAction func choosePixelFormat(_ sender: NSPopUpButton) {
+        // metalView.colorPixelFormat = .bgra8Unorm_srgb
     }
 }
