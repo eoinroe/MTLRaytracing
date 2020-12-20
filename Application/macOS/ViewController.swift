@@ -8,6 +8,7 @@
 import Cocoa
 import Metal
 import MetalKit
+import AVFoundation
 
 protocol RenderDestinationProvider {
     var currentRenderPassDescriptor: MTLRenderPassDescriptor? { get }
@@ -22,6 +23,10 @@ class ViewController: NSViewController, MTKViewDelegate {
     @IBOutlet weak var metalView: MTKView!
     
     var renderer: Renderer!
+    
+    var captureInput: AVCaptureScreenInput!
+    
+    var captureSession: AVCaptureSession!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -37,6 +42,21 @@ class ViewController: NSViewController, MTKViewDelegate {
             return
         }
         
+        captureSession = AVCaptureSession()
+
+        captureInput = AVCaptureScreenInput()
+        captureInput.minFrameDuration = CMTimeMake(value: 1, timescale: 40)
+        
+        captureSession.addInput(captureInput)
+        
+        
+        
+        
+        
+        // let device = AVCaptureDevice(uniqueID: <#T##String#>)
+        // device.activeVideoMinFrameDuration = CMTimeMake(value: 1, timescale: 40)
+         
+        
         let scene = Scene.newTestScene(device: metalView.device!)
         
         // Configure the renderer to draw to the view.
@@ -46,6 +66,16 @@ class ViewController: NSViewController, MTKViewDelegate {
         renderer.drawRectResized(size: metalView.bounds.size)
         
         addGestureRecognizers(to: view)
+    }
+    
+    override func viewDidAppear() {
+        print("Start running.")
+        captureSession.startRunning()
+    }
+    
+    override func viewWillDisappear() {
+        print("Stop running.")
+        captureSession.stopRunning()
     }
     
     // MARK: - MTKViewDelegate
