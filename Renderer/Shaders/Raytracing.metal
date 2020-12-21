@@ -655,23 +655,39 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
             {
                 // glass(ray, worldSpaceIntersectionPoint, worldSpaceSurfaceNormal, intersection.triangle_front_facing, random_offset, bounce);
                 
-                
-                float3 outward_normal = (worldSpaceIntersectionPoint - worldSpaceOrigin) / sphere.radius;
+                // float3 outward_normal = (worldSpaceIntersectionPoint - worldSpaceOrigin) / sphere.radius;
                 
                 bool front_face = dot(ray.direction, worldSpaceSurfaceNormal) < 0;
                 // bool front_face = intersection.triangle_front_facing;
                 
-                float3 normal = front_face ?  outward_normal
-                                           : -outward_normal;
+                float3 normal = front_face ?  worldSpaceSurfaceNormal
+                                           : -worldSpaceSurfaceNormal;
                 
                 float eta = front_face ? eta::air_to_glass()
                                        : eta::glass_to_air();
                 
-                // I guess if the ray is being transmitted through the normal
-                // it makes sense that you are subtracting this offset from
-                // the intersection point even if you have flipped the normal.
-                ray.origin = worldSpaceIntersectionPoint - normal * 1e-3f;
-                ray.direction = refract(ray.direction, normal, eta);
+                float cos_theta = fmin(dot(-ray.direction, normal), 1.0);
+                float sin_theta = sqrt(1.0 - cos_theta*cos_theta);
+                
+                bool cannot_refract = eta * sin_theta > 1.0;
+                
+                // Generate a random number
+                float r = halton(random_offset, bounce);
+                
+                // Use Schlick's approximation for reflectance.
+                if (cannot_refract || schlick(cos_theta, eta) > r) {
+                    // Must reflect
+                    // Add a small offset to the intersection point to avoid intersecting the same
+                    // triangle again.
+                    ray.origin = worldSpaceIntersectionPoint + normal * 1e-3f;
+                    ray.direction = reflect(ray.direction, normal);
+                } else {
+                    // I guess if the ray is being transmitted through the normal
+                    // it makes sense that you are subtracting this offset from
+                    // the intersection point even if you have flipped the normal.
+                    ray.origin = worldSpaceIntersectionPoint - normal * 1e-3f;
+                    ray.direction = refract(ray.direction, normal, eta);
+                }
             }
             
             

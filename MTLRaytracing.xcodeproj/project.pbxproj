@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6F7BD61F259003FD00B9A838 /* VideoRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F4BE1B2258EB82800BFB9A3 /* VideoRecorder.swift */; };
-		6F7BD620259003FD00B9A838 /* MetalVideoRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7BD61C259003B400B9A838 /* MetalVideoRecorder.swift */; };
 		6F937FC425829D8F0065D5B3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F937FC325829D8F0065D5B3 /* AppDelegate.swift */; };
 		6F937FC625829D8F0065D5B3 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F937FC525829D8F0065D5B3 /* SceneDelegate.swift */; };
 		6F937FC825829D8F0065D5B3 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F937FC725829D8F0065D5B3 /* ViewController.swift */; };
@@ -57,8 +55,6 @@
 		6F059BDE25829945000B53FA /* Raytracing.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = Raytracing.metal; sourceTree = "<group>"; };
 		6F059BDF25829945000B53FA /* Rasterization.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = Rasterization.metal; sourceTree = "<group>"; };
 		6F059BE125829945000B53FA /* MathLibrary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MathLibrary.swift; sourceTree = "<group>"; };
-		6F4BE1B2258EB82800BFB9A3 /* VideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecorder.swift; sourceTree = SOURCE_ROOT; };
-		6F7BD61C259003B400B9A838 /* MetalVideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalVideoRecorder.swift; sourceTree = "<group>"; };
 		6F937FC125829D8F0065D5B3 /* MTLRaytracing-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MTLRaytracing-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F937FC325829D8F0065D5B3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		6F937FC525829D8F0065D5B3 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -113,8 +109,6 @@
 		6F059BC1258298BA000B53FA /* Application */ = {
 			isa = PBXGroup;
 			children = (
-				6F4BE1B2258EB82800BFB9A3 /* VideoRecorder.swift */,
-				6F7BD61C259003B400B9A838 /* MetalVideoRecorder.swift */,
 				6F937FC225829D8F0065D5B3 /* iOS */,
 				6F937FF22582A1180065D5B3 /* macOS */,
 				6F059BC6258298BB000B53FA /* Assets.xcassets */,
@@ -310,8 +304,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6F7BD61F259003FD00B9A838 /* VideoRecorder.swift in Sources */,
-				6F7BD620259003FD00B9A838 /* MetalVideoRecorder.swift in Sources */,
 				6F9380172582A1540065D5B3 /* Raytracing.metal in Sources */,
 				6F9380182582A1540065D5B3 /* Rasterization.metal in Sources */,
 				6F9380132582A1500065D5B3 /* MathLibrary.swift in Sources */,

@@ -24,9 +24,8 @@ class ViewController: NSViewController, MTKViewDelegate {
     
     var renderer: Renderer!
     
-    var captureInput: AVCaptureScreenInput!
-    
-    var captureSession: AVCaptureSession!
+    // var captureInput: AVCaptureScreenInput!
+    // var captureSession: AVCaptureSession!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,12 +41,12 @@ class ViewController: NSViewController, MTKViewDelegate {
             return
         }
         
-        captureSession = AVCaptureSession()
-
-        captureInput = AVCaptureScreenInput()
-        captureInput.minFrameDuration = CMTimeMake(value: 1, timescale: 40)
-        
-        captureSession.addInput(captureInput)
+        // captureSession = AVCaptureSession()
+        //
+        // captureInput = AVCaptureScreenInput()
+        // captureInput.minFrameDuration = CMTimeMake(value: 1, timescale: 40)
+        //
+        // captureSession.addInput(captureInput)
         
         
         
@@ -70,12 +69,12 @@ class ViewController: NSViewController, MTKViewDelegate {
     
     override func viewDidAppear() {
         print("Start running.")
-        captureSession.startRunning()
+        // captureSession.startRunning()
     }
     
     override func viewWillDisappear() {
         print("Stop running.")
-        captureSession.stopRunning()
+        // captureSession.stopRunning()
     }
     
     // MARK: - MTKViewDelegate
