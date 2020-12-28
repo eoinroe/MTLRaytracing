@@ -1,3 +1,3 @@
 # MTLRaytracing
 
-Peter Shirley's Ray Tracing In One Weekend recreated with the new Metal ray tracing API 
+Peter Shirley's Ray Tracing in One Weekend recreated with the new Metal ray tracing API 
