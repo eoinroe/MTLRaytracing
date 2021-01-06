@@ -71,30 +71,6 @@ float3 transformDirection(float3 p, float4x4 transform) {
     return (transform * float4(p.x, p.y, p.z, 0.0f)).xyz;
 }
 
-float3 shirley_refract(const float3 uv, const float3 n, float etai_over_etat) {
-    auto cos_theta = fmin(dot(-uv, n), 1.0);
-    float3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
-    float3 r_out_parallel = -sqrt(fabs(1.0 - length_squared(r_out_perp))) * n;
-    return r_out_perp + r_out_parallel;
-}
-
-// This is rotate z...
-float3 rotate(float angle, float3 dir) {
-    float3x3 m = float3x3(cos(angle), 0.0, -sin(angle),
-                                 0.0, 1.0,         0.0,
-                          sin(angle), 0.0,  cos(angle));
-    
-    return transpose(m) * dir;
-}
-
-float3 rotateX(float angle, float3 dir) {
-  float3x3 matrix = float3x3(1,           0,          0,
-                             0,  cos(angle), sin(angle),
-                             0, -sin(angle), cos(angle));
-    
-    return transpose(matrix) * dir;
-}
-
 // Sample area light has 6 parameters
 ray generateCameraRay(uint2 tid,
                       unsigned int width,
@@ -191,16 +167,12 @@ struct SphereResources {
     device Sphere *spheres;
 };
 
-[[intersection(bounding_box, instancing, triangle_data, world_space_data)]]
+[[intersection(bounding_box, instancing, triangle_data)]]
 BoundingBoxIntersection sphereIntersectionFunction(// Ray parameters passed to the ray intersector below
                                                    float3 origin               [[origin]],
                                                    float3 direction            [[direction]],
                                                    float minDistance           [[min_distance]],
                                                    float maxDistance           [[max_distance]],
-                                                   
-                                                   ray_data float3& worldSpaceData [[payload]],
-                                                   
-                                                   float3 worldSpaceOrigin [[world_space_origin]],
                                                    
                                                    // Information about the primitive.
                                                    unsigned int primitiveIndex [[primitive_id]],
@@ -213,11 +185,6 @@ BoundingBoxIntersection sphereIntersectionFunction(// Ray parameters passed to t
 
     // Get the actual sphere enclosed in this bounding box.
     device Sphere & sphere = sphereResources.spheres[primitiveIndex];
-    
-    // Maybe this is the rays world space origin?
-    // Since world_space_direction is also available...
-    // How can a triangle have a world_space_direction??
-    worldSpaceData = worldSpaceOrigin;
     
     // Check for intersection between the ray and sphere mathematically.
     float3 oc = origin - sphere.origin;
@@ -352,6 +319,75 @@ struct ratio_of_indices_of_refraction
     }
 };
 
+struct WorldSpaceData {
+    float3 intersectionPoint;
+    float3 surfaceNormal;
+};
+
+using MaterialFunction = float3(thread ray&,
+                                WorldSpaceData,
+                                device Instances&,
+                                unsigned int,
+                                unsigned int,
+                                unsigned int);
+
+[[visible]]
+float3 diffuseMaterial(thread ray &ray,
+                       WorldSpaceData worldSpace,
+                       device Instances &instances,
+                       unsigned int instanceIndex,
+                       unsigned int random_offset,
+                       unsigned int bounce)
+{
+    // Add a small offset to the intersection point to avoid intersecting the same
+    // triangle again.
+    ray.origin = worldSpace.intersectionPoint + worldSpace.surfaceNormal * 1e-3f;
+    
+    // Pick a random point inside the tangent unit sphere that is on the same side
+    // of the surface as the ray origin.
+    ray.direction = worldSpace.surfaceNormal + random_in_unit_sphere(random_offset, bounce);
+    
+    // Return the surface color.
+    return instances.colors[instanceIndex];
+}
+
+[[visible]]
+float3 metallicMaterial(thread ray &ray,
+                        WorldSpaceData worldSpace,
+                        device Instances &instances,
+                        unsigned int instanceIndex,
+                        unsigned int random_offset,
+                        unsigned int bounce)
+{
+    // Add a small offset to the intersection point to avoid intersecting the same
+    // triangle again.
+    ray.origin = worldSpace.intersectionPoint + worldSpace.surfaceNormal * 1e-3f;
+    
+    // Reflect the ray about the normal.
+    ray.direction = reflect(ray.direction, worldSpace.surfaceNormal);
+    
+    // -*- Fuzzy reflection -*-
+    
+    // Randomize the reflected direction by using a small sphere and choosing a new
+    // end point for the ray.
+    ray.direction += random_in_unit_sphere(random_offset, bounce) * instances.fuzz[instanceIndex];
+    
+    // Return the surface color.
+    return instances.colors[instanceIndex];
+}
+
+[[visible]]
+float3 glassMaterial(thread ray &ray,
+                     WorldSpaceData worldSpace,
+                     device Instances &instances,
+                     unsigned int instanceIndex,
+                     unsigned int random_offset,
+                     unsigned int bounce)
+{
+    // Return the surface color.
+    return instances.colors[instanceIndex];
+}
+
 void diffuse(thread ray & ray, float3 p, float3 n, unsigned int random_offset, unsigned int bounce) {
     ray.origin = p + n * 1e-3f;
     ray.direction = n + random_in_unit_sphere(random_offset, bounce);
@@ -360,9 +396,6 @@ void diffuse(thread ray & ray, float3 p, float3 n, unsigned int random_offset, u
 void metallic(thread ray & ray, float3 p, float3 n, unsigned int random_offset, unsigned int bounce, float fuzz) {
     ray.origin = p + n * 1e-3f;
     ray.direction = reflect(ray.direction, n) + (random_in_unit_sphere(random_offset, bounce) * fuzz);
-    
-    //
-    ray.direction = normalize(ray.direction);
 }
 
 void glass(thread ray & ray,
@@ -384,99 +417,63 @@ void glass(thread ray & ray,
      
      This can be calculated using the dot product:
      
-        bool insideSphere = dot(ray.direction, surfaceNormal) > 0.0 ? true : false;
+         bool front_face;
+         if (dot(ray_direction, outward_normal) > 0.0) {
+             // ray is inside the sphere
+             normal = -outward_normal;
+             front_face = false;
+         }
      
      Metal's intersector also provides this results for us:
      
         intersection.triangle_front_facing
-     */
-    
-    // -*- Calculate Refraction -*-
-
-    // One confusing thing is that the result of boolean comparison with the dot
-    // product should not be the same as front_facing.
-    
-    /*
      
-     bool front_face;
-     if (dot(ray_direction, outward_normal) > 0.0) {
-         // ray is inside the sphere
-         normal = -outward_normal;
-         front_face = false;
-     }
+     N.B. The result of boolean comparison with the dot product should not be the same as
+     intersection.triangle_front_facing, however, at present there appears to be an issue
+     with the API.
      
      */
     
-    /*
+    bool front_face = dot(ray.direction, surfaceNormal) < 0;
+    // bool front_face = intersection.triangle_front_facing;
     
-    float3 angle_of_incidence = dot(ray.direction, surfaceNormal);
+    float3 normal = front_face ?  surfaceNormal
+                               : -surfaceNormal;
     
-    If the angle of incidence is...
-     
-     
-     
-    */
+    float eta = front_face ? eta::air_to_glass()
+                           : eta::glass_to_air();
     
-    // In this book we have more material types than we have geometry types,
-    // so we'll go for less work and put the determination at geometry time.
-    // front_face = dot(r.direction(), outward_normal) < 0;
-    
-    // vec3 outward_normal = (rec.p - center) / radius;
-    // rec.set_face_normal(r, outward_normal);
-    
-    // You don't need the ternary operator here!
-    // This is comparison will return true or false regardless!
-    
-    bool insideSphere = dot(ray.direction, surfaceNormal) > 0.0;
-    // bool insideSphere = dot(ray.direction, surfaceNormal) > 0.0 ? true : false;
-    
-    // One troublesome practical issue is that when the ray is in the material
-    // with the higher refractive index, there is no real solution to Snell’s law,
-    // and thus there is no refraction possible.
-    float refraction_ratio = insideSphere ? ratio_of_indices_of_refraction::glass_to_air()
-                                          : ratio_of_indices_of_refraction::air_to_glass();
-    
-    // float refraction_ratio = front_facing ? ratio_of_indices_of_refraction::air_to_glass()
-    //                                      : ratio_of_indices_of_refraction::glass_to_air();
-    
-    
-    // The direction and normal are normalized so you don't need to multiply by the length.
-    // float cos_θ = dot(ray.direction, surfaceNormal) * length(ray.direction) * length(surfaceNormal);
-
-    // faceforward(<#float3 n#>, <#float3 i#>, <#float3 nref#>)
-    
-    float cos_theta = fmin(dot(-ray.direction, surfaceNormal), 1.0);
+    float cos_theta = fmin(dot(-ray.direction, normal), 1.0);
     float sin_theta = sqrt(1.0 - cos_theta*cos_theta);
     
-    bool cannot_refract = refraction_ratio * sin_theta > 1.0;
+    bool cannot_refract = eta * sin_theta > 1.0;
     
     // Generate a random number
     float r = halton(random_offset, bounce);
     
     // Use Schlick's approximation for reflectance.
-    if (cannot_refract || schlick(cos_theta, refraction_ratio) > r) {
-        // Must reflect
+    if (cannot_refract || schlick(cos_theta, eta) > r) {
+        // -*- Must reflect -*-
         
         // Add a small offset to the intersection point to avoid intersecting the same
         // triangle again.
-        ray.origin = intersectionPoint + surfaceNormal * 1e-3f;
-        ray.direction = reflect(ray.direction, surfaceNormal);
+        ray.origin = intersectionPoint + normal * 1e-3f;
+        ray.direction = reflect(ray.direction, normal);
     } else {
-        // Can refract
+        // -*- Can refract -*-
         
-        // Subtract a small offset from the intersection point to avoid intersecting
-        // the same triangle again.
-        ray.origin = intersectionPoint - surfaceNormal * 1e-3f;
-        ray.direction = refract(ray.direction, surfaceNormal, refraction_ratio);
+        // If the ray is being transmitted through the normal it
+        // makes sense that you are subtracting this offset from
+        // the intersection point even if you have flipped the normal.
+        ray.origin = intersectionPoint - normal * 1e-3f;
+        ray.direction = refract(ray.direction, normal, eta);
     }
-    
-    // Why would you bother calculating all of the above if no refraction is
-    // possible when the ray is in the material with the higher refractive
-    // index?
     
     /*
      
-    bool insideSphere = dot(ray.direction, surfaceNormal) > 0.0 ? true : false;
+    // -*- Calculate Refraction -*-
+     
+    bool insideSphere = dot(ray.direction, surfaceNormal) > 0.0;
     
     if (insideSphere)
     {
@@ -518,7 +515,7 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
                              texture2d<unsigned int, access::read> randomTex [[texture(1)]],
                              
                              instance_acceleration_structure accelerationStructure     [[buffer(3)]],
-                             intersection_function_table<instancing, triangle_data, world_space_data> intersectionFunctionTable [[buffer(4)]])
+                             intersection_function_table<instancing, triangle_data> intersectionFunctionTable [[buffer(4)]])
 {    
     // The sample aligns the thread count to the threadgroup size. which means the thread count
     // may be different than the bounds of the texture. Test to make sure this thread
@@ -542,15 +539,37 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
         
         // A blue-to-white gradient depending on ray's y-coordinate
         accumulatedColor *= calculateGradient(tid, uniforms.height);
+        
+        /*
+         
+         This is all that the intersector can return:
+         
+         template <typename...intersection_tags>
+         struct intersection_result
+         {
+             intersection_type type;
+             float distance;
+             uint primitive_id;
+             uint geometry_id;
+         
+             /// Available only if intersection_tags have instancing.
+             uint instance_id;
+         
+             /// Available only if intersection_tags have triangle_data.
+             float2 triangle_barycentric_coord;
+             bool triangle_front_facing;
+         };
+         
+         */
                 
         // Create an intersector to test for intersection between the ray and the geometry in the scene.
-        intersector<instancing, triangle_data, world_space_data> intersector;
+        intersector<instancing, triangle_data> intersector;
         
-        // This does not seem to be having any effect...
-        // Default is clockwise.
+        // This does not seem to be having any effect on intersection.triangle_front_facing
+        // (the default is clockwise).
         // intersector.set_triangle_front_facing_winding(winding::counterclockwise);
        
-        intersection_result<instancing, triangle_data, world_space_data> intersection;
+        intersection_result<instancing, triangle_data> intersection;
         
         // shading
         // -------
@@ -558,13 +577,10 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
         // Simulate up to 4 ray bounces. Each bounce will propagate light backwards along the
         // ray's path towards the camera.
         for (int bounce = 0; bounce < uniforms.bounces; bounce++) {
-            
-            // Attempt at using payload
-            float3 worldSpaceData;
                 
             // Check for intersection between the ray and the acceleration structure.
             // intersection = intersector.intersect(ray, accelerationStructure);
-            intersection = intersector.intersect(ray, accelerationStructure, intersectionFunctionTable, worldSpaceData);
+            intersection = intersector.intersect(ray, accelerationStructure, intersectionFunctionTable);
             
             // Stop if the ray didn't hit anything and has bounced out of the scene.
             if (intersection.type == intersection_type::none)
@@ -574,16 +590,12 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
             float4x4 objectToWorldSpaceTransform(1.0f);
             unsigned int instanceIndex = intersection.instance_id;
             
-            
-            
             for (int column = 0; column < 4; column++)
                 for (int row = 0; row < 3; row++)
                     objectToWorldSpaceTransform[column][row] = instances.accelDescriptor[instanceIndex].transformationMatrix[column][row];
             
             // Triangle intersection data
             float3 worldSpaceIntersectionPoint = ray.origin + ray.direction * intersection.distance;
-            
-
             
             // We are only rendering spheres in this example.
             device SphereResources & sphereResources = *(device SphereResources *)((device char *)resources);
@@ -592,53 +604,23 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
             unsigned primitiveIndex = intersection.primitive_id;
             device Sphere & sphere = sphereResources.spheres[primitiveIndex];
             
-            // with the world_space_data tag, "the intersection functions are entitle to query
-            // world_space_origin"
-            // I wonder if this could be sent as part of the ray payload?
-            
-            
-            /*
-             
-             This is all that the intersector can return!
-             
-             template <typename...intersection_tags>
-             struct intersection_result
-             {
-                 intersection_type type;
-                 float distance;
-                 uint primitive_id;
-                 uint geometry_id;
-             
-                 /// Available only if intersection_tags have instancing.
-                 uint instance_id;
-             
-                 /// Available only if intersection_tags have triangle_data.
-                 float2 triangle_barycentric_coord;
-                 bool triangle_front_facing;
-             };
-             
-             */
-            
-            
             // Transform the sphere's origin from object space to world space.
             float3 worldSpaceOrigin = transformPoint(sphere.origin, objectToWorldSpaceTransform);
-            // worldSpaceOrigin = worldSpaceData;
-            
-        
            
-            // For a sphere, the outward normal is in the direction of the hit point minus the center: 
+            // For a sphere, the outward normal is in the direction of the hit point minus the center:
+            // vec3 outward_normal = (rec.p - center) / radius;
+            // rec.set_face_normal(r, outward_normal);
             
             // Compute the surface normal directly in world space.
             float3 worldSpaceSurfaceNormal = normalize(worldSpaceIntersectionPoint - worldSpaceOrigin);
             
-            // vec3 outward_normal = (rec.p - center) / radius;
-            // rec.set_face_normal(r, outward_normal);
-            
-            // float eps = numeric_limits<float>::epsilon();
-            
             if (instances.materials[instanceIndex] == materialIndexDiffuse)
             {
-                diffuse(ray, worldSpaceIntersectionPoint, worldSpaceSurfaceNormal, random_offset, bounce);
+                diffuse(ray,
+                        worldSpaceIntersectionPoint,
+                        worldSpaceSurfaceNormal,
+                        random_offset,
+                        bounce);
             }
             else if (instances.materials[instanceIndex] == materialIndexMetallic)
             {
@@ -650,46 +632,17 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
                          instances.fuzz[instanceIndex]);
             }
             
-            // Refraction follows a law called Snell’s law, which states that the ratio of the sines of the incident and transmitted angles is equal to the inverse ratio of the indices of refraction of the media:
+            // Refraction follows a law called Snell’s law, which states that the ratio of the sines of the incident
+            // and transmitted angles is equal to the inverse ratio of the indices of refraction of the media:
             else if (instances.materials[instanceIndex] == materialIndexGlass)
             {
-                // glass(ray, worldSpaceIntersectionPoint, worldSpaceSurfaceNormal, intersection.triangle_front_facing, random_offset, bounce);
-                
-                // float3 outward_normal = (worldSpaceIntersectionPoint - worldSpaceOrigin) / sphere.radius;
-                
-                bool front_face = dot(ray.direction, worldSpaceSurfaceNormal) < 0;
-                // bool front_face = intersection.triangle_front_facing;
-                
-                float3 normal = front_face ?  worldSpaceSurfaceNormal
-                                           : -worldSpaceSurfaceNormal;
-                
-                float eta = front_face ? eta::air_to_glass()
-                                       : eta::glass_to_air();
-                
-                float cos_theta = fmin(dot(-ray.direction, normal), 1.0);
-                float sin_theta = sqrt(1.0 - cos_theta*cos_theta);
-                
-                bool cannot_refract = eta * sin_theta > 1.0;
-                
-                // Generate a random number
-                float r = halton(random_offset, bounce);
-                
-                // Use Schlick's approximation for reflectance.
-                if (cannot_refract || schlick(cos_theta, eta) > r) {
-                    // Must reflect
-                    // Add a small offset to the intersection point to avoid intersecting the same
-                    // triangle again.
-                    ray.origin = worldSpaceIntersectionPoint + normal * 1e-3f;
-                    ray.direction = reflect(ray.direction, normal);
-                } else {
-                    // I guess if the ray is being transmitted through the normal
-                    // it makes sense that you are subtracting this offset from
-                    // the intersection point even if you have flipped the normal.
-                    ray.origin = worldSpaceIntersectionPoint - normal * 1e-3f;
-                    ray.direction = refract(ray.direction, normal, eta);
-                }
+                glass(ray,
+                      worldSpaceIntersectionPoint,
+                      worldSpaceSurfaceNormal,
+                      intersection.triangle_front_facing,
+                      random_offset,
+                      bounce);
             }
-            
             
             // The sphere is a uniform color so no need to interpolate the color across the surface.
             float3 surfaceColor = instances.colors[instanceIndex];

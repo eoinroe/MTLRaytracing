@@ -347,133 +347,6 @@ class Scene: NSObject {
         
         return scene
     }
-    
-    static func newSphereGeometryScene(device: MTLDevice, sizeOfWorld: Float = 1000) -> Scene {
-        
-        let scene = Scene(device: device)
-        
-        let sphereGeometry = SphereGeometry(device: device)
-        
-        
-        let worldOrigin = float3(0.0, (sizeOfWorld + 1) * -1, 0.0)
-        
-        // Ground
-        sphereGeometry.addSphereWithOrigin(origin: worldOrigin,
-                                           radius: sizeOfWorld,
-                                           color: float3(repeating: 0.5),
-                                           index: Material.diffuse.rawValue)
-        
-        let scale: Float = 10
-        
-        let offset: Float = 0.015 / scale
-        
-        var radius: Float = 3.0
-        
-        var r = radius + sizeOfWorld
-        
-        // azimuthal
-        var θ: Float = .pi * 0.5
-            
-        // zenith
-        var φ: Float = .pi * 0.5
-        
-        var x = r * cos(θ) * sin(φ)
-        var y = r * sin(θ) * sin(φ)
-        var z = r * cos(φ)
-
-        // Middle Glass
-        sphereGeometry.addSphereWithOrigin(origin: worldOrigin + float3(x, y, z),
-                                           radius: radius,
-                                           color: float3(repeating: 1.0),
-                                           index: Material.glass.rawValue)
-        
-        
-        radius = 3.0
-        
-        r = radius + sizeOfWorld
-        
-        // azimuthal
-        θ = .pi * (0.5 - offset)
-            
-        // zenith
-        φ = .pi * (0.5 + offset)
-        
-        x = r * cos(θ) * sin(φ)
-        y = r * sin(θ) * sin(φ)
-        z = r * cos(φ)
-                
-        sphereGeometry.addSphereWithOrigin(origin: worldOrigin + float3(x, y, z),
-                                           radius: radius,
-                                           color: float3(0.7, 0.6, 0.5),
-                                           index: Material.metallic.rawValue,
-                                           fuzz: 0.0)
-        
-        radius = 3.0
-        
-        r = radius + sizeOfWorld
-        
-        // azimuthal
-        θ = .pi * (0.5 + offset)
-            
-        // zenith
-        φ = .pi * (0.5 - offset)
-        
-        x = r * cos(θ) * sin(φ)
-        y = r * sin(θ) * sin(φ)
-        z = r * cos(φ)
-        
-        // Large brown sphere
-        sphereGeometry.addSphereWithOrigin(origin: worldOrigin + float3(x, y, z),
-                                           radius: radius,
-                                           color: float3(0.552, 0.270, 0.109),
-                                           index: Material.diffuse.rawValue)
-        
-        
-         
-        for _ in 0..<40 {
-            
-            let radius = Float.random(in: 0.5...1.0)
-                
-            let r = radius + sizeOfWorld
-            let origin = float3(0.0, (sizeOfWorld + 1) * -1, 0.0)
-            
-            // azimuthal
-            var θ: Float = .pi * 0.5
-            θ += Float.random(in: -0.15...0.15) / scale
-                
-            // zenith
-            var φ: Float = .pi * 0.5
-            φ += Float.random(in: -0.15...0.15) / scale
-            
-            let x = r * cos(θ) * sin(φ)
-            let y = r * sin(θ) * sin(φ)
-            let z = r * cos(φ)
-            
-            sphereGeometry.addSphereWithOrigin(origin: origin + float3(x, y, z),
-                                               radius: radius,
-                                               color: float3(Float.random(in: 0...1), Float.random(in: 0...1), Float.random(in: 0...1)),
-                                               index: (UInt32.random(in: 0...100) % 2),
-                                               fuzz: Float.random(in: 0...1))
-            }
- 
-            
-        
-            
-            /*
-            
-            sphereGeometry.addSphereWithOrigin(origin: float3(Float.random(in: -15...15), 0.0, Float.random(in: -15...15)),
-                                               radius: Float.random(in: 0.75...1.0),
-                                               color: float3(Float.random(in: 0...1), Float.random(in: 0...1), Float.random(in: 0...1)),
-                                               index: (Int32.random(in: 0...100) % 2),
-                                               fuzz: Float.random(in: 0...1))
- 
-            */
-        
-        
-        scene.addGeometry(mesh: sphereGeometry)
-        
-        return scene
-    }
 }
 
 extension Scene {
@@ -512,8 +385,11 @@ extension Scene {
             let x = Float.random(in: range)
             let z = Float.random(in: range)
             
+            // This stops overlap between the base of the little spheres and the ground
+            let epsilon: Float = 0.001
+            
             // Use spherical coordinates to calculate the y-position
-            let y = sqrt(pow(1000 + radius, 2) - pow(x, 2) - pow(z, 2))
+            let y = sqrt(pow(1000 + radius + epsilon, 2) - pow(x, 2) - pow(z, 2))
             
             let sphere = Sphere(origin: SIMD3<Float>(0.0, -1000.0, 0.0) + SIMD3<Float>(x, y, z), radius: radius)
             
@@ -551,25 +427,4 @@ extension Scene {
     }
     
     
-}
-
-private extension Scene {
-    static func createSphereTransform(radius: Float, sizeOfWorld: Float, offset: Float) -> float4x4 {
-        let r = radius + sizeOfWorld
-        
-        // azimuthal
-        let θ = .pi * (0.5 - offset)
-            
-        // zenith
-        let φ = .pi * (0.5 + offset)
-        
-        let x = r * cos(θ) * sin(φ)
-        let y = r * sin(θ) * sin(φ)
-        let z = r * cos(φ)
-        
-        let scale = float4x4(scaling: float3(repeating: radius))
-        let translate = float4x4(translation: float3(x, y, z))
-        
-        return translate * scale
-    }
 }

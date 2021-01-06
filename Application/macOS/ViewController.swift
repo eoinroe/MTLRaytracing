@@ -26,6 +26,8 @@ class ViewController: NSViewController, MTKViewDelegate {
     
     // var captureInput: AVCaptureScreenInput!
     // var captureSession: AVCaptureSession!
+    
+    var frameCapture: Bool = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -34,6 +36,7 @@ class ViewController: NSViewController, MTKViewDelegate {
         metalView.device = MTLCreateSystemDefaultDevice()
         metalView.colorPixelFormat = .bgra8Unorm
         metalView.depthStencilPixelFormat = .depth32Float
+        metalView.framebufferOnly = false
         metalView.delegate = self
 
         guard metalView.device != nil else {
@@ -88,6 +91,80 @@ class ViewController: NSViewController, MTKViewDelegate {
     // Implements the main rendering loop.
     func draw(in view: MTKView) {
         renderer.update()
+        
+        // This basically takes a screenshot
+        // if frameCapture {
+        //     screenShot()
+        //     frameCapture = false
+        // }
+        
+        if frameCapture {
+            writeFrame(frameCount: renderer.frameCount, view: view)
+        }
+    }
+    
+    func writeFrame(frameCount: UInt32, view: MTKView) {
+         /*
+         
+         if let drawable = view.currentDrawable,
+            var image = CIImage(mtlTexture: drawable.texture,
+                                  options: [:]) {
+         */
+         
+        if var image = CIImage(mtlTexture: renderer.accumulation.read!, options: [:]) {
+            image = image.transformed(by: image.orientationTransform(for: .downMirrored))
+            
+            // Sandboxing enforces strict permsissions on your application meaning that you
+            // cannot write to the desktop unless it is switched off.
+            let url = URL(fileURLWithPath: "/Users/eoinroe/Desktop/Frames")
+            
+            let context = CIContext()
+            
+            /* Render a CIImage to PNG data. Image must have a finite non-empty extent. */
+            /* The CGColorSpace must be kCGColorSpaceModelRGB or kCGColorSpaceModelMonochrome */
+            /* and must match the specified CIFormat. */
+            /* No options keys are supported at this time. */
+            
+            do {
+                try context.writePNGRepresentation(of: image,
+                                                   to: url.appendingPathComponent("frame" + String(frameCount) + ".png"),
+                                                   format: CIFormat.RGBA16,
+                                                   colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                                   // colorSpace: kCGColorSpaceModelRGB,
+                                                   options: [:])
+            } catch let error {
+                print("Could not save the png image \(error)")
+            }
+        }
+    }
+    
+    func screenShot() {
+        if var image = CIImage(mtlTexture: renderer.accumulation.read!, options: [:]) {
+            image = image.transformed(by: image.orientationTransform(for: .downMirrored))
+            
+            // Sandboxing enforces strict permsissions on your application meaning that you
+            // cannot write to the desktop unless it is switched off.
+            let paths = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)
+            let url = paths[0]
+        
+            let context = CIContext()
+            
+            do {
+                try context.writeJPEGRepresentation(of: image, to: url.appendingPathComponent("testFromCIImage.jpeg"), colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!, options: [:])
+            } catch let error {
+                print("Could not save the jpeg image \(error)")
+            }
+            
+            do {
+                try context.writePNGRepresentation(of: image,
+                                                   to: url.appendingPathComponent("testFromCIImage.png"),
+                                                   format: CIFormat.RGBA16,
+                                                   colorSpace: CGColorSpace(name: CGColorSpace.linearSRGB)!,
+                                                   options: [:])
+            } catch let error {
+                print("Could not save the png image \(error)")
+            }
+        }
     }
     
     
@@ -180,5 +257,35 @@ class ViewController: NSViewController, MTKViewDelegate {
     
     @IBAction func choosePixelFormat(_ sender: NSPopUpButton) {
         // metalView.colorPixelFormat = .bgra8Unorm_srgb
+    }
+    
+    @IBAction func captureFrames(_ sender: NSButton) {
+        print("Capturing frames.")
+        frameCapture = true
+        
+        // Set this to zero
+        renderer.frameCount = 0
+        
+        let desktopDirectoryURL = try? FileManager.default.url(for: .desktopDirectory,
+                                                               in: .userDomainMask,
+                                                               appropriateFor: nil,
+                                                               create: false)
+
+        // if var url = desktopDirectoryURL {
+        //     url.appendPathComponent("Frames")
+        // }
+        
+        guard var url = desktopDirectoryURL else {
+            print("The url is not valid.")
+            return
+        }
+        
+        url.appendPathComponent("Frames")
+        
+        do {
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
+        } catch let error {
+            print("The directory could not be created \(error)")
+        }
     }
 }

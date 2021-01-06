@@ -74,8 +74,6 @@ class ViewController: UIViewController, MTKViewDelegate, RPPreviewViewController
             
             addGestureRecognizers(to: view)
             
-            
-            
             // let value = UIInterfaceOrientation.landscapeLeft.rawValue
             // UIDevice.current.setValue(value, forKey: "orientation")
         }

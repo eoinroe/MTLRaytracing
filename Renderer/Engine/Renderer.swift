@@ -120,6 +120,10 @@ class Renderer: NSObject {
     
     var frameIndex: UInt32 = 0
     
+    // Need to create a variable that is independent of frame index
+    // for frame capture
+    var frameCount: UInt32 = 0
+    
     var textureAllocator: MPSSVGFDefaultTextureAllocator!
     var TAA: MPSTemporalAA!
     var denoiser: MPSSVGFDenoiser!
@@ -1008,6 +1012,9 @@ class Renderer: NSObject {
         
         // This is no longer the case since both pipelines are running simultaneously
         frameIndex += 1
+        
+        // How do you make sure that a frame has definitely been rendered?
+        frameCount += 1
     }
     
     func encodeRaytracingKernelToCommandBuffer(commandBuffer: MTLCommandBuffer) -> MTLTexture {
