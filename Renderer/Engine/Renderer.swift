@@ -50,11 +50,17 @@ class Renderer: NSObject {
     
     var raytracingFunction: MTLFunction!
     var raytracingPipeline: MTLComputePipelineState!
+    
+    var interactionFunction: MTLFunction!
+    var interactionPipeline: MTLComputePipelineState!
+    
     var copyPipeline: MTLRenderPipelineState!
     var gammaCorrectionPipeline: MTLRenderPipelineState!
     
     var useIntersectionFunctions: Bool = false
     var intersectionFunctionTable: MTLIntersectionFunctionTable!
+    
+    var mousePosition = SIMD2<UInt32>.zero
     
     /// This is updated by the view controller when the
     /// NSPanGestureRecognizer responds to user input.
@@ -325,12 +331,18 @@ class Renderer: NSObject {
         }
             
         raytracingFunction = specializedFunctionWithName(name: "raytracingKernel")
+        interactionFunction = specializedFunctionWithName(name: "interaction")
         
         let functions = Array(intersectionFunctions.values)
         // let functions: [MTLFunction] = intersectionFunctions.map { $0.1 }
         
         // Create the compute pipeline state which does all of the ray tracing.
         raytracingPipeline = newComputePipelineStateWithFunction(function: raytracingFunction, linkedFunctions: functions)
+        
+        // Will you be able to reuse the intersection function table?
+        interactionPipeline = newComputePipelineStateWithFunction(function: interactionFunction, linkedFunctions: functions)
+        
+        // Do you need to create a separate interaction pipeline intersection function table?
     
         // Create the function table
         if useIntersectionFunctions {
@@ -343,6 +355,8 @@ class Renderer: NSObject {
             // function table is specific to the compute pipeline state that created it and you
             // can only use it with that pipeline.
             intersectionFunctionTable = raytracingPipeline.makeIntersectionFunctionTable(descriptor: intersectionFunctionTableDescriptor)!
+            
+            // intersectionFunctionTable = interactionPipeline.makeIntersectionFunctionTable(descriptor: intersectionFunctionTableDescriptor)!
             
             // Bind the buffer used to pass resources to the intersection functions.
             intersectionFunctionTable.setBuffer(resourceBuffer, offset: 0, index: 0)
@@ -1061,6 +1075,9 @@ class Renderer: NSObject {
         // binding slots.
         computeEncoder.setAccelerationStructure(instanceAccelerationStructure, bufferIndex: 3)
         computeEncoder.setIntersectionFunctionTable(intersectionFunctionTable, bufferIndex: 4)
+        
+        // Pass in mouse position
+        computeEncoder.setBytes(&mousePosition, length: MemoryLayout<SIMD2<UInt32>>.stride, index: 5)
         
         // Mark any resources used by intersection functions as "used". The sample does this because
         // it only references these resources indirectly via the resource buffer. Metal makes all the

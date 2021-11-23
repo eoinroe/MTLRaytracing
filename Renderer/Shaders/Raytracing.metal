@@ -506,6 +506,45 @@ void glass(thread ray & ray,
     */
 }
 
+kernel void interaction(uint tid [[thread_position_in_grid]],
+                        constant uint2& mouse_position,
+                        constant Uniforms &uniforms                     [[buffer(0)]],
+                        device void *resources                          [[buffer(1)]],
+                        device Instances &instances                     [[buffer(2)]],
+                        
+                        texture2d<float, access::write> colorTexture    [[texture(0)]],
+                        texture2d<unsigned int, access::read> randomTex [[texture(1)]],
+                        
+                        instance_acceleration_structure accelerationStructure     [[buffer(3)]],
+                        intersection_function_table<instancing, triangle_data> intersectionFunctionTable [[buffer(4)]])
+{
+    // Apply a random offset to the random number index to decorrelate pixels.
+    // unsigned int random_offset = randomTex.read(mouse_position).r + uniforms.frameIndex;
+    
+    // Random offset is probably unnecessary for this.
+    unsigned int random_offset = 0;
+
+    ray ray = generateCameraRay(mouse_position,
+                                uniforms.width,
+                                uniforms.height,
+                                random_offset,
+                                uniforms.rotationMatrix);
+    
+    // Create an intersector to test for intersection between the ray and the geometry in the scene.
+    intersector<instancing, triangle_data> intersector;
+    intersection_result<instancing, triangle_data> intersection;
+    
+    // Check for intersection between the ray and the acceleration structure.
+    // intersection = intersector.intersect(ray, accelerationStructure);
+    intersection = intersector.intersect(ray, accelerationStructure, intersectionFunctionTable);
+    
+    // Stop if the ray didn't hit anything and has bounced out of the scene.
+    if (intersection.type != intersection_type::none) {
+        unsigned int instanceIndex = intersection.instance_id;
+        instances.colors[instanceIndex] = float3(0, 0, 0);
+    }
+}
+
 kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
                              constant Uniforms &uniforms                     [[buffer(0)]],
                              device void *resources                          [[buffer(1)]],
@@ -515,7 +554,8 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
                              texture2d<unsigned int, access::read> randomTex [[texture(1)]],
                              
                              instance_acceleration_structure accelerationStructure     [[buffer(3)]],
-                             intersection_function_table<instancing, triangle_data> intersectionFunctionTable [[buffer(4)]])
+                             intersection_function_table<instancing, triangle_data> intersectionFunctionTable [[buffer(4)]],
+                             constant uint2& mouse_position [[buffer(5)]])
 {    
     // The sample aligns the thread count to the threadgroup size. which means the thread count
     // may be different than the bounds of the texture. Test to make sure this thread
@@ -524,6 +564,38 @@ kernel void raytracingKernel(uint2 tid [[thread_position_in_grid]],
         
         // Apply a random offset to the random number index to decorrelate pixels.
         unsigned int random_offset = randomTex.read(tid).r + uniforms.frameIndex;
+        
+        if (mouse_position.x == tid.x && mouse_position.y == tid.y) {
+            // random_offset = 0;
+            
+            // Generate ray
+            ray ray = generateCameraRay(tid,
+                                        uniforms.width,
+                                        uniforms.height,
+                                        random_offset,
+                                        uniforms.rotationMatrix);
+            
+            // Create an intersector to test for intersection between the ray and the geometry in the scene.
+            intersector<instancing, triangle_data> intersector;
+            intersection_result<instancing, triangle_data> intersection;
+            
+            // Check for intersection between the ray and the acceleration structure.
+            // intersection = intersector.intersect(ray, accelerationStructure);
+            intersection = intersector.intersect(ray, accelerationStructure, intersectionFunctionTable);
+            
+            // Stop if the ray didn't hit anything and has bounced out of the scene.
+            if (intersection.type != intersection_type::none) {
+                unsigned int instanceIndex = intersection.instance_id;
+                
+                if (instanceIndex != 0) {
+                    instances.colors[instanceIndex] = float3(0, 0, 1);
+                    instances.materials[instanceIndex] = materialIndexDiffuse;
+                    
+                    // instances.materials[instanceIndex] = instances.materials[instanceIndex] == materialIndexDiffuse ? materialIndexMetallic : materialIndexDiffuse;
+                }
+            }
+        }
+        
         
         // Generate ray
         ray ray = generateCameraRay(tid,

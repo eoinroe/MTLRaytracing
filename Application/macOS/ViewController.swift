@@ -288,4 +288,19 @@ class ViewController: NSViewController, MTKViewDelegate {
             print("The directory could not be created \(error)")
         }
     }
+    
+    override func mouseDown(with event: NSEvent) {
+        // This will reset the accumulation.
+        renderer.frameIndex = 0
+        
+        var location = view.convert(event.locationInWindow, from: nil)
+        location.y = view.bounds.height - location.y
+        
+        
+
+        renderer.mousePosition = SIMD2<UInt32>( uint(location.x),
+                                                uint(location.y) )
+        
+        print("Mouse position,", renderer.mousePosition)
+    }
 }
