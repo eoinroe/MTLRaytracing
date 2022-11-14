@@ -918,6 +918,7 @@ class Renderer: NSObject {
             computeEncoder.dispatchThreadgroups(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
             computeEncoder.endEncoding()
             
+            // Not sure why this is being returned here?
             textureAllocator.return(textureToDenoise)
             
             /*
@@ -1315,6 +1316,9 @@ class Renderer: NSObject {
         renderPassDescriptor.colorAttachments[0].texture = drawable.texture
         renderPassDescriptor.colorAttachments[0].loadAction = .clear
         renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
+        renderPassDescriptor.imageblockSampleLength = 8
+        
+        // = renderDestination.colorPixelFormat
         
         let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         

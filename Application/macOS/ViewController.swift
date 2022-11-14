@@ -229,8 +229,13 @@ class ViewController: NSViewController, MTKViewDelegate {
         switch sender.state {
         case .on:
             renderer.useAccumulation = false
+            metalView.colorPixelFormat = .rgba16Float
         case .off:
             renderer.useAccumulation = true
+            
+            if renderer.useGammaCorrection {
+                metalView.colorPixelFormat = .bgra8Unorm
+            }
         default:
             print("On/Off are the only valid states in this case.")
         }
