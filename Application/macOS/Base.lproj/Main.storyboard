@@ -752,18 +752,8 @@
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xwh-G0-3Gp">
-                                <rect key="frame" x="513" y="329" width="80" height="18"/>
-                                <buttonCell key="cell" type="check" title="Denoiser" bezelStyle="regularSquare" imagePosition="left" inset="2" id="LzB-PL-zCY">
-                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <action selector="toggleDenoising:" target="XfG-lQ-9wD" id="8aT-fc-4lC"/>
-                                </connections>
-                            </button>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="TF2-HK-hxk">
-                                <rect key="frame" x="513" y="293" width="140" height="18"/>
+                                <rect key="frame" x="513" y="309" width="140" height="18"/>
                                 <buttonCell key="cell" type="check" title="Gamma Correction" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="WXC-Li-VHD">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
@@ -773,7 +763,7 @@
                                 </connections>
                             </button>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3Q2-AE-3mD">
-                                <rect key="frame" x="533" y="217" width="134" height="32"/>
+                                <rect key="frame" x="535" y="233" width="132" height="32"/>
                                 <buttonCell key="cell" type="push" title="Capture Frames" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="BeX-gg-mYp">
                                     <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
@@ -787,23 +777,20 @@
                             <constraint firstAttribute="trailing" secondItem="70g-UZ-x2T" secondAttribute="trailing" constant="15" id="0fz-Lr-6l2"/>
                             <constraint firstAttribute="trailing" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="200" id="1I0-gw-qXO"/>
                             <constraint firstItem="FXt-QY-EiD" firstAttribute="leading" secondItem="LRl-J4-2Bs" secondAttribute="trailing" constant="8" id="2lm-Lc-VbL"/>
-                            <constraint firstAttribute="trailing" secondItem="xwh-G0-3Gp" secondAttribute="trailing" constant="107" id="4qV-V1-rWo"/>
-                            <constraint firstItem="TF2-HK-hxk" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="xwh-G0-3Gp" secondAttribute="leading" id="5vI-r5-RwQ"/>
-                            <constraint firstItem="TF2-HK-hxk" firstAttribute="top" secondItem="xwh-G0-3Gp" secondAttribute="bottom" constant="20" id="GcP-3z-4Gj"/>
                             <constraint firstItem="FXt-QY-EiD" firstAttribute="centerX" secondItem="70g-UZ-x2T" secondAttribute="centerX" id="HoV-2u-vQ9"/>
-                            <constraint firstItem="3Q2-AE-3mD" firstAttribute="leading" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="40" id="IIb-wI-1HZ"/>
+                            <constraint firstItem="3Q2-AE-3mD" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="U9x-Tl-TBR" secondAttribute="trailing" symbolic="YES" id="IIb-wI-1HZ"/>
                             <constraint firstItem="U9x-Tl-TBR" firstAttribute="leading" secondItem="ab1-vA-stc" secondAttribute="leading" id="JR0-9s-18J"/>
                             <constraint firstAttribute="trailing" secondItem="3Q2-AE-3mD" secondAttribute="trailing" constant="40" id="KIJ-fE-a4Z"/>
                             <constraint firstItem="LRl-J4-2Bs" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="8" symbolic="YES" id="KW2-PF-57R"/>
                             <constraint firstAttribute="bottom" secondItem="U9x-Tl-TBR" secondAttribute="bottom" id="KuY-OO-Wnv"/>
+                            <constraint firstItem="TF2-HK-hxk" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="8" symbolic="YES" id="Lzx-YD-biO"/>
+                            <constraint firstItem="TF2-HK-hxk" firstAttribute="top" secondItem="FXt-QY-EiD" secondAttribute="bottom" constant="50" id="OOr-T0-nCl"/>
                             <constraint firstItem="FXt-QY-EiD" firstAttribute="top" secondItem="LRl-J4-2Bs" secondAttribute="top" id="P32-fx-iWl"/>
                             <constraint firstAttribute="trailing" secondItem="TF2-HK-hxk" secondAttribute="trailing" constant="47" id="QXt-a3-CLz"/>
-                            <constraint firstItem="xwh-G0-3Gp" firstAttribute="top" secondItem="FXt-QY-EiD" secondAttribute="bottom" constant="30" id="YiG-Em-L4W"/>
                             <constraint firstItem="70g-UZ-x2T" firstAttribute="top" secondItem="ab1-vA-stc" secondAttribute="top" constant="52" id="Zs6-Hc-4WR"/>
                             <constraint firstItem="3Q2-AE-3mD" firstAttribute="top" secondItem="TF2-HK-hxk" secondAttribute="bottom" constant="50" id="fRr-eA-t5J"/>
                             <constraint firstItem="U9x-Tl-TBR" firstAttribute="top" secondItem="ab1-vA-stc" secondAttribute="top" id="mtO-uy-kRE"/>
                             <constraint firstItem="70g-UZ-x2T" firstAttribute="leading" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="15" id="plO-uT-Qbt"/>
-                            <constraint firstItem="xwh-G0-3Gp" firstAttribute="leading" secondItem="U9x-Tl-TBR" secondAttribute="trailing" constant="15" id="rPM-TT-1ca"/>
                             <constraint firstAttribute="trailing" secondItem="FXt-QY-EiD" secondAttribute="trailing" constant="79" id="sDs-4j-FoG"/>
                             <constraint firstItem="LRl-J4-2Bs" firstAttribute="top" secondItem="70g-UZ-x2T" secondAttribute="bottom" constant="30" id="sn2-TI-AXC"/>
                         </constraints>
